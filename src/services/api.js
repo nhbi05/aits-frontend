@@ -1,7 +1,7 @@
 // src/services/api.js - Complete implementation with JWT authentication
 import axios from 'axios';
 
-const API_URL = 'https://academictrackingsystem-production.up.railway.app/api';
+const API_URL = 'http://localhost:8000/api';
 
 // Create main API instance
 const api = axios.create({
@@ -77,7 +77,7 @@ api.interceptors.response.use(
         }
 
         // Use tokenApi to avoid interceptors
-        const response = await tokenApi.post('/refresh/', { 
+        const response = await tokenApi.post('token/refresh/', { 
           refresh: refreshToken 
         });
         
@@ -122,7 +122,10 @@ export const authService = {
     const response = await api.post('/login/', credentials);
     // Store tokens
     if (response.data.access && response.data.refresh) {
-      authService.setAuthTokens(response.data);
+      localStorage.setItem('access', response.data.access);
+      localStorage.setItem('refresh', response.data.refresh);
+      api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+      
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
@@ -156,7 +159,7 @@ export const authService = {
     }
   },
   
-  // Helper method to store auth tokens
+  // Helper method to store auth tokens - compatible with the new approach
   setAuthTokens: (tokens) => {
     localStorage.setItem('access', tokens.access);
     localStorage.setItem('refresh', tokens.refresh);
@@ -214,9 +217,6 @@ export const authService = {
     }
   }
 };
-
-// Student services
-// Update to studentService in src/services/api.js
 export const studentService = {
   getProfile: async () => {
     await authService.checkTokenExpiration();
@@ -259,202 +259,129 @@ export const registrarService = {
   // Get registrar profile information
   getProfile: async () => {
     await authService.checkTokenExpiration();
-    try {
-      const response = await api.get('/registrar/profile/');
-      return {
-        ...response.data,
-        role: 'registrar' // Ensure role is set
-      };
-    } catch (error) {
-      console.error('Failed to fetch registrar profile:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch registrar profile'
-      );
-    }
+    const response = await api.get('/registrar/profile/');
+    return response.data;
   },
   
-  // Get all academic issues with statistics
-  getAllIssues: async (params = {}) => {
+  // Get all academic issues
+  getAllIssues: async () => {
     await authService.checkTokenExpiration();
     
-    try {
-      // Get issues with optional query params
-      const issuesResponse = await api.get('/registrar/issues/', { params });
-      
-      // Get statistics (could be combined with issues endpoint)
-      const statsResponse = await api.get('/registrar/issues/stats/');
-      
-      return {
-        issues: Array.isArray(issuesResponse.data) 
-          ? issuesResponse.data 
-          : issuesResponse.data?.issues || [],
-        stats: {
-          totalIssues: statsResponse.data?.total || issuesResponse.data?.length || 0,
-          pendingIssues: statsResponse.data?.pending || 
-            issuesResponse.data?.filter(i => i.status !== 'resolved').length || 0,
-          resolvedIssues: statsResponse.data?.resolved || 
-            issuesResponse.data?.filter(i => i.status === 'resolved').length || 0,
-          assignedIssues: statsResponse.data?.assigned || 
-            issuesResponse.data?.filter(i => i.assigned_to && i.status !== 'resolved').length || 0
-        }
-      };
-    } catch (error) {
-      console.error('Failed to fetch issues:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch issues'
-      );
-    }
+    // Get issues
+    const issuesResponse = await api.get('registrar/issues/');
+    
+    // Get statistics separately
+    const statsResponse = await api.get('Registrar_issue_counts/');
+    
+    return { 
+      issues: issuesResponse.data,
+      stats: statsResponse.data  // This should include totalIssues, pendingIssues, resolvedIssues
+    };
   },
   
-  // Assign an issue to a lecturer
+  // Assign an issue to a specific lecturer
   assignIssue: async (issueId, lecturerId) => {
     await authService.checkTokenExpiration();
-    
-    try {
-      const response = await api.patch(`/registrar/issues/${issueId}/assign/`, {
-        lecturer_id: lecturerId,
-        status: 'assigned' // Ensure status is set
-      });
-      
-      return {
-        ...response.data,
-        id: issueId, // Ensure ID is included
-        assigned_to: lecturerId,
-        status: response.data.status || 'assigned'
-      };
-    } catch (error) {
-      console.error('Failed to assign issue:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to assign issue'
-      );
-    }
+    const response = await api.post(`/assign-issue/${issueId}/`, { 
+      lecturer_id: lecturerId 
+    });
+    return response.data;
   },
 
-  // Get comprehensive dashboard data
+  // Get dashboard data
   getDashboardData: async () => {
     await authService.checkTokenExpiration();
     
-    try {
-      const [profileResponse, issuesResponse, statsResponse] = await Promise.all([
-        api.get('/registrar/profile/'),
-        api.get('/registrar/issues/?limit=5'), // Get recent 5 issues
-        api.get('/registrar/issues/stats/')
-      ]);
-      
-      return {
-        profile: {
-          ...profileResponse.data,
-          role: 'registrar'
-        },
-        dashboard: {
-          recentIssues: Array.isArray(issuesResponse.data) 
-            ? issuesResponse.data 
-            : issuesResponse.data?.issues || [],
-          stats: {
-            total: statsResponse.data?.total || 0,
-            pending: statsResponse.data?.pending || 0,
-            resolved: statsResponse.data?.resolved || 0,
-            assigned: statsResponse.data?.assigned || 0
-          }
-        }
-      };
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch dashboard data'
-      );
-    }
-  },
-  
-  // Filter issues with statistics
-  filterIssues: async (filters) => {
-    await authService.checkTokenExpiration();
+    // Get profile
+    const profileResponse = await api.get('/registrar/profile/');
     
-    try {
-      const response = await api.get('/registrar/issues/filter/', { 
-        params: filters 
-      });
-      
-      return {
-        issues: Array.isArray(response.data) 
-          ? response.data 
-          : response.data?.issues || [],
-        stats: response.data?.stats || {
-          total: response.data?.length || 0,
-          pending: response.data?.filter(i => i.status !== 'resolved').length || 0,
-          resolved: response.data?.filter(i => i.status === 'resolved').length || 0
-        }
-      };
-    } catch (error) {
-      console.error('Failed to filter issues:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to filter issues'
-      );
-    }
+    // Get issue stats (same as in issue counts)
+    const statsResponse = await api.get('Registrar_issue_counts/');
+    
+    return {
+      profile: profileResponse.data,
+      dashboard: statsResponse.data
+    };
   },
   
-  // Get detailed issue information
+  // Get issue counts for dashboard
+  getIssueStats: async () => {
+    await authService.checkTokenExpiration();
+    const response = await api.get('Registrar_issue_counts/');
+    return response.data;
+  },
+  
+  // Get specific issue details
   getIssueDetails: async (issueId) => {
     await authService.checkTokenExpiration();
-    
-    try {
-      const response = await api.get(`/registrar/issues/${issueId}/`);
-      return {
-        ...response.data,
-        id: issueId // Ensure ID is included
-      };
-    } catch (error) {
-      console.error('Failed to fetch issue details:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to fetch issue details'
-      );
-    }
+    const response = await api.get(`/issue/${issueId}/`);
+    return response.data;
   },
   
-  // Update issue status
-  updateIssueStatus: async (issueId, status) => {
+  // Get resolved issues
+  getResolvedIssues: async () => {
     await authService.checkTokenExpiration();
-    
-    try {
-      const response = await api.patch(`/registrar/issues/${issueId}/status/`, {
-        status
-      });
-      
-      return {
-        ...response.data,
-        id: issueId,
-        status: response.data.status || status
-      };
-    } catch (error) {
-      console.error('Failed to update issue status:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to update issue status'
-      );
-    }
-  },
-  
-  // Generate reports
-  generateReport: async (params) => {
-    await authService.checkTokenExpiration();
-    
-    try {
-      const response = await api.get('/registrar/reports/generate/', {
-        params,
-        responseType: 'blob' // For file downloads
-      });
-      
-      return {
-        data: response.data,
-        filename: response.headers['content-disposition']
-          ?.split('filename=')[1] 
-          || `report-${new Date().toISOString()}.pdf`
-      };
-    } catch (error) {
-      console.error('Failed to generate report:', error);
-      throw new Error(
-        error.response?.data?.message || 'Failed to generate report'
-      );
-    }
+    const response = await api.get('/resolved-issues/');
+    return response.data;
   }
 };
+
+
+export const lecturerService = {
+  
+  getAssignedIssues: async () => {
+    const response = await axios.get('/api/assigned-issues/', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  },
+  getResolvedIssues: async () => {
+    const response = await axios.get('/api/resolved-issues/', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  },
+
+  getIssueDetails: async (issueId) => {
+    const response = await axios.get(`/api/issues/${issueId}/`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  },
+
+  resolveIssue: async (issueId) => {
+    const response = await axios.patch(`/api/issues/${issueId}/resolve/`, {}, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await axios.get('/api/lecturer/notifications/', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  },
+
+  markNotificationAsRead: async (notificationId) => {
+    const response = await axios.patch(`/api/lecturer/notifications/${notificationId}/read/`, {}, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access')}`,
+      },
+    });
+    return response.data;
+  }
+};
+
+
 export default api;

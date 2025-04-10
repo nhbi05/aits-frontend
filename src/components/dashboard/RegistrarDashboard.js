@@ -9,7 +9,6 @@ const RegistrarDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
-  // Get data from Redux store with updated selectors
   const { user } = useSelector(state => state.auth);
   const { 
     data: issues = [], 
@@ -199,7 +198,7 @@ const RegistrarDashboard = () => {
                       {issues.slice(0, 5).map(issue => (
                         <tr key={issue.id} className="border-b hover:bg-gray-100">
                           <td className="px-4 py-3">{issue.first_name}</td>
-                          <td className="px-4 py-3">{issue.course}</td>
+                          <td className="px-4 py-3">{issue.programme}</td>
                           <td className="px-4 py-3">{issue.registration_no}</td>
                           <td className="px-4 py-3">{issue.assigned_to || 'Unassigned'}</td>
                           <td className="px-4 py-3">
@@ -208,12 +207,12 @@ const RegistrarDashboard = () => {
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}>
-                              {issue.status || 'pending'}
+                              {issue.status}
                             </span>
                           </td>
                         </tr>
                       ))}
-                </tbody>
+                    </tbody>
                   </table>
                 </div>
               ) : (
