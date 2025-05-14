@@ -23,7 +23,7 @@ const IssueDetails = () => {
       }
 
       try {
-        const response = await axios.get('http://localhost:8000/api/my-issues/', {
+        const response = await axios.get('https://academictrackingsystem-production2.up.railway.app/api/my-issues/', {
           headers: {
             Authorization: `Bearer ${token.access}`,
           },

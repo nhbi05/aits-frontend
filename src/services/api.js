@@ -1,7 +1,7 @@
 // src/services/api.js - Complete implementation with JWT authentication
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://academictrackingsystem-production2.up.railway.app/api';
 
 // Create main API instance
 const api = axios.create({
@@ -215,6 +215,12 @@ export const authService = {
     } catch (error) {
       return null;
     }
+  },
+
+  fetchUsers: async () => {
+    await authService.checkTokenExpiration();
+    const response = await api.get('/users/');
+    return response.data;
   }
 };
 export const studentService = {
@@ -233,27 +239,16 @@ export const studentService = {
   // Add the createIssue method
   createIssue: async (issueData) => {
     await authService.checkTokenExpiration();
-    const response = await api.post('/submit-issue/', issueData);
+    const response = await api.post('/submit-issue/', issueData, {
+      headers: {
+        'Content-Type': undefined // This will remove the default content-type
+      }
+    });
     return response.data;
-  }
-};
+  }};
 
 // Issue services
 
-// Notification services
-export const notificationService = {
-  getAll: async () => {
-    await authService.checkTokenExpiration();
-    const response = await api.get('/notifications/');
-    return response.data;
-  },
-
-  markAsRead: async (notificationId) => {
-    await authService.checkTokenExpiration();
-    const response = await api.post(`/notifications/${notificationId}/mark-read/`);
-    return response.data;
-  },
-};
 
 export const registrarService = {
   // Get registrar profile information
@@ -279,15 +274,26 @@ export const registrarService = {
     };
   },
   
-  // Assign an issue to a specific lecturer
-  assignIssue: async (issueId, lecturerId) => {
-    await authService.checkTokenExpiration();
-    const response = await api.post(`/assign-issue/${issueId}/`, { 
-      lecturer_id: lecturerId 
+assignIssue: async (issueId, lecturerId) => {
+  await authService.checkTokenExpiration();
+  
+  // Ensure both issueId and lecturerId are integers
+  const parsedIssueId = parseInt(issueId, 10);
+  const parsedLecturerId = parseInt(lecturerId, 10);
+  
+  console.log(`Assigning issue ${parsedIssueId} to lecturer ID:`, parsedLecturerId);
+  console.log("Request payload:", { user_id: parsedLecturerId });
+  
+  try {
+    const response = await api.post(`/assign-issue/${parsedIssueId}/`, {
+      user_id: parsedLecturerId
     });
     return response.data;
-  },
-
+  } catch (error) {
+    console.error("Assignment API error:", error.response?.data || error.message);
+    throw error;
+  }
+},
   // Get dashboard data
   getDashboardData: async () => {
     await authService.checkTokenExpiration();
@@ -323,6 +329,18 @@ export const registrarService = {
     await authService.checkTokenExpiration();
     const response = await api.get('/resolved-issues/');
     return response.data;
+  },
+  
+  getLecturers: async () => {
+    await authService.checkTokenExpiration();
+    try {
+      const response = await api.get('/search-lecturers/');
+      console.log("Lecturers API response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching lecturers:", error);
+      throw error;
+    }
   }
 };
 
@@ -330,7 +348,7 @@ export const registrarService = {
 export const lecturerService = {
   
   getAssignedIssues: async () => {
-    const response = await axios.get('/api/assigned-issues/', {
+    const response = await api.get('/assigned-issues/', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
@@ -338,16 +356,12 @@ export const lecturerService = {
     return response.data;
   },
   getResolvedIssues: async () => {
-    const response = await axios.get('/api/resolved-issues/', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('access')}`,
-      },
-    });
+    const response = await api.get('/resolved-issues/');
     return response.data;
   },
 
   getIssueDetails: async (issueId) => {
-    const response = await axios.get(`/api/issues/${issueId}/`, {
+    const response = await api.get(`/api/issues/${issueId}/`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
@@ -356,16 +370,12 @@ export const lecturerService = {
   },
 
   resolveIssue: async (issueId) => {
-    const response = await axios.patch(`/api/issues/${issueId}/resolve/`, {}, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('access')}`,
-      },
-    });
+    const response = await api.post("/resolve-issue/", { issueId });
     return response.data;
   },
 
   getNotifications: async () => {
-    const response = await axios.get('/api/lecturer/notifications/', {
+    const response = await api.get('/api/lecturer/notifications/', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
@@ -374,7 +384,7 @@ export const lecturerService = {
   },
 
   markNotificationAsRead: async (notificationId) => {
-    const response = await axios.patch(`/api/lecturer/notifications/${notificationId}/read/`, {}, {
+    const response = await api.patch(`/api/lecturer/notifications/${notificationId}/read/`, {}, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
@@ -382,6 +392,8 @@ export const lecturerService = {
     return response.data;
   }
 };
+
+// Add a test call to your debug endpoint
 
 
 export default api;
