@@ -145,7 +145,7 @@ export const authService = {
     try {
       const refreshToken = localStorage.getItem('refresh');
       if (refreshToken) {
-        await api.post('/api/logout/', { refresh: refreshToken });
+        await api.post('/logout/', { refresh: refreshToken });
       }
     } catch (error) {
       console.error('Logout API error:', error);
@@ -220,7 +220,7 @@ export const authService = {
 
   fetchUsers: async () => {
     await authService.checkTokenExpiration();
-    const response = await api.get('/api/users/');
+    const response = await api.get('/users/');
     return response.data;
   }
 };
