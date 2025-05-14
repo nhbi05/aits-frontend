@@ -1,7 +1,7 @@
 // src/services/api.js - Complete implementation with JWT authentication
 import axios from 'axios';
 
-const API_URL = 'https://academictrackingsystem-production2.up.railway.app';
+const API_URL = 'https://aits-backend-production.up.railway.app/api';
 
 // Create main API instance
 const api = axios.create({
@@ -220,7 +220,7 @@ export const authService = {
 
   fetchUsers: async () => {
     await authService.checkTokenExpiration();
-    const response = await api.get('/users/');
+    const response = await api.get('/api/users/');
     return response.data;
   }
 };
