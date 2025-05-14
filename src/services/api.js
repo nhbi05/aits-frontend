@@ -1,7 +1,7 @@
 // src/services/api.js - Complete implementation with JWT authentication
 import axios from 'axios';
 
-const API_URL = 'https://academictrackingsystem-production2.up.railway.app';
+const API_URL = 'https://academictrackingsystem-production2.up.railway.app/api';
 
 // Create main API instance
 const api = axios.create({
@@ -376,7 +376,7 @@ export const lecturerService = {
   },
 
   getNotifications: async () => {
-    const response = await api.get('/api/lecturer/notifications/', {
+    const response = await api.get('/lecturer/notifications/', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
@@ -385,7 +385,7 @@ export const lecturerService = {
   },
 
   markNotificationAsRead: async (notificationId) => {
-    const response = await api.patch(`/api/lecturer/notifications/${notificationId}/read/`, {}, {
+    const response = await api.patch(`/lecturer/notifications/${notificationId}/read/`, {}, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access')}`,
       },
