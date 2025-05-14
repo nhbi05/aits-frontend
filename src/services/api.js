@@ -1,7 +1,7 @@
 // src/services/api.js - Complete implementation with JWT authentication
 import axios from 'axios';
 
-const API_URL = 'https://academictrackingsystem-production2.up.railway.app';
+const API_URL = 'https://academictrackingsystem-production2.up.railway.app/api';
 
 // Create main API instance
 const api = axios.create({
@@ -115,12 +115,12 @@ api.interceptors.response.use(
 // Auth service
 export const authService = {
   register: async (userData) => {
-    const response = await api.post('/api/register/', userData);
+    const response = await api.post('/register/', userData);
     return response.data;
   },
 
   login: async (credentials) => {
-    const response = await api.post('/api/login/', credentials);
+    const response = await api.post('/login/', credentials);
     // Store tokens
     if (response.data.access && response.data.refresh) {
       localStorage.setItem('access', response.data.access);
@@ -135,7 +135,7 @@ export const authService = {
   },
   
   refresh: async (refreshToken) => {
-    const response = await tokenApi.post('/api/refresh/', { 
+    const response = await tokenApi.post('/refresh/', { 
       refresh: refreshToken 
     });
     return response.data;
@@ -227,20 +227,20 @@ export const authService = {
 export const studentService = {
   getProfile: async () => {
     await authService.checkTokenExpiration();
-    const response = await api.get('/api/student/profile/');
+    const response = await api.get('/student/profile/');
     return response.data;
   },
   
   getIssues: async () => {
     await authService.checkTokenExpiration();
-    const response = await api.get('/api/my-issues/');
+    const response = await api.get('/my-issues/');
     return response.data;
   },
   
   // Add the createIssue method
   createIssue: async (issueData) => {
     await authService.checkTokenExpiration();
-    const response = await api.post('/api/submit-issue/', issueData, {
+    const response = await api.post('/submit-issue/', issueData, {
       headers: {
         'Content-Type': undefined // This will remove the default content-type
       }
