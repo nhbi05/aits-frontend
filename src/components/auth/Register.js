@@ -62,43 +62,37 @@ const Register = () => {
     }
   
     // Create the appropriate profile data based on role
-    let profileData = {};
-    if (formData.role === 'student') {
-      profileData = {
-        student_profile: {
-          student_no: formData.student_no,
-          registration_no: formData.registration_no, // Added registration number
-          college: formData.college,
-          programme: formData.programme,
-        }
-      };
-    } else if (formData.role === 'lecturer') {
-      profileData = {
-        lecturer_profile: {
-          department: formData.department,
-        }
-      };
-    } else if (formData.role === 'registrar') {
-      profileData = {
-        registrar_profile: {
-          college: formData.college,
-        }
-      };
-    }
-
-    const registrationData = {
+    let registrationData = {
       username: formData.username,
       email: formData.email,
       password: formData.password,
       password2: formData.password2,
       first_name: formData.first_name,
       last_name: formData.last_name,
-      role: formData.role,
-      ...profileData
+      role: formData.role
     };
+
+    // Add the appropriate profile data based on role
+    if (formData.role === 'student') {
+      registrationData.student_profile = {
+        student_no: formData.student_no,
+        registration_no: formData.registration_no,
+        college: formData.college,
+        programme: formData.programme,
+      };
+    } else if (formData.role === 'lecturer') {
+      registrationData.lecturer_profile = {
+        department: formData.department,
+      };
+    } else if (formData.role === 'registrar') {
+      registrationData.registrar_profile = {
+        college: formData.college,
+      };
+    }
 
     dispatch(registerUser(registrationData));
   };
+
 
   return (
     <Carousel>
