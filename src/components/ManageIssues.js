@@ -475,7 +475,7 @@ useEffect(() => {
     ))
   }
 </select>
-3. Enhance Error Handling for Lecturers Fetch
+
       </div>
       
       <div className="flex justify-end space-x-3">      
