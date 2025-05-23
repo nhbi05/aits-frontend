@@ -445,7 +445,6 @@ useEffect(() => {
           </div>
           
           {/* Assignment Modal */}
-          {/* Assignment Modal */}
 {assignmentData.isModalOpen && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -457,20 +456,26 @@ useEffect(() => {
         </label>
         <select
   id="lecturer"
-  value={assignmentData.lecturerId || ''}  // Always ensure value is not undefined
+  value={assignmentData.lecturerId || ''}
   onChange={handleLecturerChange}
   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
 >
   <option value="">-- Select a Lecturer --</option>
   {lecturers
-    .filter(lecturer => lecturer.id !== undefined)  // Only show lecturers with IDs
+    .filter(lecturer => lecturer.id !== undefined && lecturer.id !== null)
     .map((lecturer) => (
-      <option key={lecturer.id} value={lecturer.id}>
-        {`${lecturer.first_name || ''} ${lecturer.last_name || ''}`}
+      <option 
+        key={lecturer.id} 
+        value={lecturer.id}
+      >
+        {`${lecturer.user?.first_name || lecturer.first_name || ''} ${
+          lecturer.user?.last_name || lecturer.last_name || ''
+        }`}
       </option>
     ))
   }
 </select>
+3. Enhance Error Handling for Lecturers Fetch
       </div>
       
       <div className="flex justify-end space-x-3">      
