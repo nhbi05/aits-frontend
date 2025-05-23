@@ -221,15 +221,6 @@ useEffect(() => {
             </li>
             <li>
               <button 
-                onClick={() => navigate('/manage-students')}
-                className="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-colors"
-              >
-                <span className="mr-3 text-lg">👥</span>
-                Manage Students
-              </button>
-            </li>
-            <li>
-              <button 
                 onClick={() => navigate('/manage-issues')}
                 className="flex items-center w-full px-6 py-3 bg-green-100 text-green-700 transition-colors"
               >
