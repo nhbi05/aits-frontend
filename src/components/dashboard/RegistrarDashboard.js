@@ -45,7 +45,6 @@ const RegistrarDashboard = () => {
   
   const navItems = [
     { name: 'Dashboard', icon: '🏠', path: '/registrar-dashboard' },
-    { name: 'Manage Students', icon: '👥', path: '/manage-students' },
     { name: 'Manage Issues', icon: '📋', path: '/manage-issues' },
   ];
   
