@@ -14,7 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import IssueDetails from './components/IssueDetails';
 import Profile from './components/Profile';
 import Settings from './components/Settings';
-
+import ManageIssues from './components/ManageIssues';
 function App() {
   return (
     <AuthProvider>
@@ -27,6 +27,7 @@ function App() {
           <Route path="/lecturer-dashboard" element={<LecturerDashboard />} />
           <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
           <Route path="/my-issues/" element={<ViewIssues />} />
+          <Route path="/manage-issues/" element={<ManageIssues />} />
           <Route path="/submit-issue" element={<ProtectedRoute element={<IssueSubmissionForm />} />} />
           <Route path="/student-issues" element={<ProtectedRoute element={<IssueSubmissionForm />} />} />
           <Route path="/student/issues" element={<ProtectedRoute element={<IssueDetails />} />} />
