@@ -4,124 +4,153 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
 const StudentDashboard = () => {
-const navigate = useNavigate();
-const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-const [profileData, setProfileData] = useState(null);
-const [issues, setIssues] = useState([]);
-const [profileLoading, setProfileLoading] = useState(true);
-const [issuesLoading, setIssuesLoading] = useState(true);
-const [error, setError] = useState(null);
+  const [profileData, setProfileData] = useState(null);
+  const [issues, setIssues] = useState([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [issuesLoading, setIssuesLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-// Get token helper - standardized to use localStorage directly
-const getAuthToken = useCallback(() => {
-// Get access token directly from localStorage
-const accessToken = localStorage.getItem('access');
-if (accessToken) {
-  return accessToken;
-}
-return null;
-}, []);
+  // Get token helper - standardized to use localStorage directly
+  const getAuthToken = useCallback(() => {
+    const accessToken = localStorage.getItem('access');
+    if (accessToken) {
+      return accessToken;
+    }
+    return null;
+  }, []);
 
-// Fetch student profile data
-useEffect(() => {
-const fetchStudentData = async () => {
-  const accessToken = getAuthToken();
-  
-  if (!accessToken) {
-    setError("Authentication token not found. Please log in again.");
-    setProfileLoading(false);
-    return;
-  }
-  
-  try {
-    const response = await axios.get('https://aits-backend-production.up.railway.app//api/student/profile/', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    setProfileData(response.data);
-  } catch (err) {
-    console.error("Error fetching profile data:", err);
+  // Fetch student profile data
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      const accessToken = getAuthToken();
+      
+      if (!accessToken) {
+        setError("Authentication token not found. Please log in again.");
+        setProfileLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await axios.get('https://aits-backend-production.up.railway.app//api/student/profile/', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        setProfileData(response.data);
+      } catch (err) {
+        console.error("Error fetching profile data:", err);
+        
+        if (err.response && err.response.status === 401) {
+          setError("Your session has expired. Please log in again.");
+        } else {
+          setError("Failed to load your profile. Please try again.");
+        }
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [getAuthToken, navigate]);
+
+  // Fetch issues
+  useEffect(() => {
+    const fetchIssues = async () => {
+      const accessToken = getAuthToken();
+      
+      if (!accessToken) {
+        setIssuesLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await axios.get('https://aits-backend-production.up.railway.app/api/my-issues/', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        setIssues(response.data);
+      } catch (err) {
+        console.error("Error fetching issues:", err);
+        if (!error && err.response && err.response.status === 401) {
+          setError("Your session has expired. Please log in again.");
+        }
+      } finally {
+        setIssuesLoading(false);
+      }
+    };
+
+    fetchIssues();
+  }, [getAuthToken, error]);
+
+  // Derived stats based on issues
+  const statsData = {
+    totalIssues: issues?.length || 0,
+    resolvedIssues: issues?.filter(issue => issue.status === 'resolved').length || 0,
+    pendingIssues: issues?.filter(issue => issue.status !== 'resolved').length || 0
+  };
+
+  // Loading and error states
+  const loading = profileLoading || issuesLoading;
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Clear tokens from localStorage
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    localStorage.removeItem('user');
     
-    // Check if error is due to expired token
-    if (err.response && err.response.status === 401) {
-      setError("Your session has expired. Please log in again.");
-      // Optional: redirect to login
-      // navigate('/login');
-    } else {
-      setError("Failed to load your profile. Please try again.");
-    }
-  } finally {
-    setProfileLoading(false);
-  }
-};
+    // Use the logout function from context
+    logout();
+    navigate('/login');
+    
+    // Close the modal
+    setShowLogoutModal(false);
+  };
 
-fetchStudentData();
-}, [getAuthToken, navigate]);
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
 
-// Fetch issues
-useEffect(() => {
-const fetchIssues = async () => {
-  const accessToken = getAuthToken();
-  
-  if (!accessToken) {
-    setIssuesLoading(false);
-    return;
-  }
-  
-  try {
-    const response = await axios.get('https://aits-backend-production.up.railway.app/api/my-issues/', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    setIssues(response.data);
-  } catch (err) {
-    console.error("Error fetching issues:", err);
-    // Don't set error here to avoid duplicate error messages
-    // if profile fetch already failed
-    if (!error && err.response && err.response.status === 401) {
-      setError("Your session has expired. Please log in again.");
-    }
-  } finally {
-    setIssuesLoading(false);
-  }
-};
-
-fetchIssues();
-}, [getAuthToken, error]);
-
-// Derived stats based on issues
-const statsData = {
-totalIssues: issues?.length || 0,
-resolvedIssues: issues?.filter(issue => issue.status === 'resolved').length || 0,
-pendingIssues: issues?.filter(issue => issue.status !== 'resolved').length || 0
-};
-
-// Loading and error states
-const loading = profileLoading || issuesLoading;
-
-const handleLogout = () => {
-if (window.confirm("Are you sure you want to log out?")) {
-  // Clear tokens from localStorage directly
-  localStorage.removeItem('access');
-  localStorage.removeItem('refresh');
-  localStorage.removeItem('user');
-  // Also use the logout function from context
-  logout();
-  navigate('/login');
-}
-};
-
-const navItems = [
-{ name: 'Dashboard', icon: '🏠', path: '/student-dashboard' },
-{ name: 'View Issues', icon: '📄', path: '/my-issues' },
-{ name: 'Create Issue', icon: '➕', path: '/submit-issue' },
-];
+  const navItems = [
+    { name: 'Dashboard', icon: '🏠', path: '/student-dashboard' },
+    { name: 'View Issues', icon: '📄', path: '/my-issues' },
+    { name: 'Create Issue', icon: '➕', path: '/submit-issue' },
+  ];
 
   return (
     <div className="flex h-screen bg-green-50">
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">Confirm Logout</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to log out?</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleLogoutCancel}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogoutConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar Navigation */}
       <div className="w-64 bg-white shadow-md">
         <div className="p-6">
@@ -145,7 +174,7 @@ const navItems = [
             
             <li>
               <button 
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-red-100 hover:text-red-700 transition-colors"
               >
                 <span className="mr-3 text-lg">🚪</span>
